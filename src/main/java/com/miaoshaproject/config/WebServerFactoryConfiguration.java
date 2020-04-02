@@ -8,7 +8,7 @@ import org.springframework.boot.web.server.ConfigurableWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.stereotype.Component;
 
-//当spring容器内没有TomcatEmbeddedServletContainerFactory这个bean时，会把bean加载jinspring容器中
+//当spring容器内没有TomcatEmbeddedServletContainerFactory这个bean时，会把bean加载进spring容器中
 @Component
 public class WebServerFactoryConfiguration implements WebServerFactoryCustomizer<ConfigurableWebServerFactory> {
     @Override
@@ -19,7 +19,7 @@ public class WebServerFactoryConfiguration implements WebServerFactoryCustomizer
             public void customize(Connector connector) {
               Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
 
-              //定制化keepalivetimeout，设置30秒内没有请求则服务端断开keepalive连接
+                //定制化keepalivetimeout，设置30秒内没有请求则服务端断开keepalive连接
                 protocol.setKeepAliveTimeout(30000);
                 //当客户端发送超过10000个请求则断开keepalive连接
                 protocol.setMaxKeepAliveRequests(10000);

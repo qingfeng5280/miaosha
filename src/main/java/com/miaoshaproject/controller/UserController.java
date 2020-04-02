@@ -8,8 +8,11 @@ import com.miaoshaproject.service.UserService;
 import com.miaoshaproject.service.model.UserModel;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.security.MD5Encoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import sun.misc.BASE64Encoder;
@@ -19,6 +22,8 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Controller("user")
 @RequestMapping("/user")
@@ -31,7 +36,10 @@ public class UserController extends BaseController {
     @Autowired
     private HttpServletRequest httpServletRequest;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
 
+    private Logger logger = LoggerFactory.getLogger(UserController.class);
 
 
     @RequestMapping("/get")
@@ -70,7 +78,7 @@ public class UserController extends BaseController {
 
 
         //将OTP验证码通过短信通道发送给用户，省略
-        System.out.println("telephone=" + telephone + "&otpCOde=" + otpCode);
+        logger.info("telephone=" + telephone + "&otpCOde=" + otpCode);
 
         return CommonReturnType.create(null);
     }
@@ -87,12 +95,11 @@ public class UserController extends BaseController {
                                      @RequestParam(name = "age") Integer age,
                                      @RequestParam(name = "password") String password) throws BusinessException, UnsupportedEncodingException, NoSuchAlgorithmException {
 
-        System.out.println("进入register");
+        logger.info("用户注册");
         //验证手机号和对应的otpcode相符合
         String inSessionOtpCode = (String) this.httpServletRequest.getSession().getAttribute(telephone);
-        System.out.println(inSessionOtpCode);
+        logger.info(inSessionOtpCode);
         if (!com.alibaba.druid.util.StringUtils.equals(otpCode, inSessionOtpCode)) {
-            System.out.println("exception");
             throw new BusinessException(EmBusinessError.PARAMETER_VALIDATION_ERROR, "短信验证码不符合");
         }
 
@@ -114,13 +121,13 @@ public class UserController extends BaseController {
     }
 
 
-    //用户注册接口
+    //用户登陆
     @RequestMapping(value = "/login", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
     public CommonReturnType login(@RequestParam(name = "telephone") String telephone,
                                   @RequestParam(name = "password") String password) throws BusinessException, UnsupportedEncodingException, NoSuchAlgorithmException {
 
-    //入参校验
+        //入参校验
         if(StringUtils.isEmpty(telephone)||StringUtils.isEmpty(password)){
             throw new BusinessException(EmBusinessError.PARAMETER_VALIDATION_ERROR) ;
         }
@@ -129,11 +136,24 @@ public class UserController extends BaseController {
         //用户登录服务，校验用户登录是否合法
         UserModel userModel = userService.validateLogin(telephone,this.EncodeByMd5(password));
 
-        //将登录凭证加入到用户登录成功的session内
-        this.httpServletRequest.getSession().setAttribute("IS_LOGIN",true);
-        this.httpServletRequest.getSession().setAttribute("LOGIN_USER",userModel);
+        logger.info(userModel.toString());
 
-        return CommonReturnType.create(null) ;
+        //将登录凭证加入到用户登录成功的session内
+
+        //修改成若用户登陆验证成功后将对应的登陆信息和登陆凭证存入redis
+
+        //生成登陆凭证token，UUID
+        String uuidToken = UUID.randomUUID().toString();
+        uuidToken = uuidToken.replace("-","");
+        //建议token和用户登陆态之间的联系
+        redisTemplate.opsForValue().set(uuidToken,userModel);
+        redisTemplate.expire(uuidToken,1, TimeUnit.HOURS);
+
+        //this.httpServletRequest.getSession().setAttribute("IS_LOGIN",true);
+        //this.httpServletRequest.getSession().setAttribute("LOGIN_USER",userModel);
+
+        //下发了token
+        return CommonReturnType.create(uuidToken) ;
     }
 
 

@@ -7,9 +7,11 @@ import com.miaoshaproject.service.OrderService;
 import com.miaoshaproject.service.impl.UserServiceImpl;
 import com.miaoshaproject.service.model.OrderModel;
 import com.miaoshaproject.service.model.UserModel;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +26,8 @@ public class OrderController extends BaseController {
     private OrderService orderService;
     @Autowired
     private HttpServletRequest httpServletRequest;
+    @Autowired
+    RedisTemplate redisTemplate;
 
     private Logger logger = LoggerFactory.getLogger(OrderController.class);
 
@@ -37,12 +41,37 @@ public class OrderController extends BaseController {
         logger.info("进入createOrder");
 
 
-        Boolean isLogin = (Boolean)httpServletRequest.getSession().getAttribute("IS_LOGIN");
-        if(isLogin == null || !isLogin.booleanValue()){
+        //Boolean isLogin = (Boolean)httpServletRequest.getSession().getAttribute("IS_LOGIN");
+
+       /* String token = httpServletRequest.getParameterMap().get("token")[0];
+        if(StringUtils.isEmpty(token)){
+            throw new BusinessException(EmBusinessError.USER_NOT_LOGIN);
+        }
+        UserModel userModel = (UserModel) redisTemplate.opsForValue().get(token);
+        if(userModel == null){
+            throw new BusinessException(EmBusinessError.USER_NOT_EXIST);
+        }*/
+
+       String token = httpServletRequest.getParameterMap().get("token")[0];
+
+        logger.info("token:"+token);
+
+       if(StringUtils.isEmpty(token)){
+           throw new BusinessException(EmBusinessError.USER_NOT_LOGIN,"用户还未登陆不能下单");
+       }
+
+       UserModel userModel = (UserModel) redisTemplate.opsForValue().get("token");
+
+        logger.info("userModel:"+userModel);
+       if(userModel==null){
+           throw new BusinessException(EmBusinessError.USER_NOT_LOGIN,"用户还未登陆不能下单");
+       }
+
+/*       if(isLogin == null || !isLogin.booleanValue()){
             throw new BusinessException(EmBusinessError.USER_NOT_LOGIN);
         }
 
-        UserModel userModel = (UserModel)httpServletRequest.getSession().getAttribute("LOGIN_USER");
+        UserModel userModel = (UserModel)httpServletRequest.getSession().getAttribute("LOGIN_USER");*/
 
         OrderModel orderModel = orderService.createOrder(userModel.getId(), itemId, promoId, amount);
 

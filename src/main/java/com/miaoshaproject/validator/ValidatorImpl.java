@@ -18,11 +18,9 @@ public class ValidatorImpl implements InitializingBean {
 
 
     public ValidationResult validate(Object bean){
-        logger.info("进入validate");
         final ValidationResult result = new ValidationResult();
         Set<ConstraintViolation<Object>> constraintViolationSet = validator.validate(bean);
 
-        logger.info("validate");
         if(constraintViolationSet.size() >0){
             result.setHasErrors(true);
 
@@ -33,8 +31,6 @@ public class ValidatorImpl implements InitializingBean {
                 result.getErrorMsgMap().put(propertyName, errMsg);
             });
         }
-
-        logger.info("进入validate");
         return result;
     }
 

@@ -14,8 +14,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
 
   <parent>
@@ -34,6 +34,21 @@
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-data-redis</artifactId>
+      <version>2.1.8.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>19.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
 
@@ -43,11 +58,11 @@
       <scope>test</scope>
     </dependency>
 
- <!--   <dependency>
+     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
-      <version>5.1.46</version>
-    </dependency>-->
+      <version>5.1.48</version>
+    </dependency>
 
     <!-- https://mvnrepository.com/artifact/log4j/log4j -->
     <dependency>
@@ -103,7 +118,49 @@
 
   <build>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
+
       <plugins>
+
+        <!-- mybatis-generator -->
+        <plugin>
+          <groupId>org.mybatis.generator</groupId>
+          <artifactId>mybatis-generator-maven-plugin</artifactId>
+          <version>${org.mybatis.generator.version}</version>
+          <!--
+                用maven mybatis插件
+                如果不在plugin里面添加依赖包得引用的话，会找不到相关得jar包，
+                在plugin外部得jar包，他不会去找到并执行，
+                所以要把plugin运行依赖得jar配置都放在里面
+                -->
+          <dependencies>
+            <dependency>
+              <groupId>mysql</groupId>
+              <artifactId>mysql-connector-java</artifactId>
+              <version>${mysql.version}</version>
+            </dependency>
+          </dependencies>
+
+          <executions>
+            <execution>
+              <id>mybaits generator</id>
+              <phase>package</phase>
+              <goals>
+                <goal>generate</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <!--允许移动生成的文件-->
+            <verbose>true</verbose>
+            <!--允许文件自动覆盖，实际开发中千万不要设置为 true-->
+            <overwrite>false</overwrite>
+            <!--generator 配置文件路径-->
+            <configurationFile>
+              src/main/resources/mybatis-generator.xml
+            </configurationFile>
+          </configuration>
+        </plugin>
+
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -131,9 +188,12 @@
           <version>2.5.2</version>
         </plugin>
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
           <version>2.8.2</version>
         </plugin>
+
+
         <!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
@@ -143,46 +203,7 @@
           <artifactId>maven-project-info-reports-plugin</artifactId>
           <version>3.0.0</version>
         </plugin>
-      <!--mybatis-->
-        <plugin>
-          <groupId>org.mybatis.generator</groupId>
-          <artifactId>mybatis-generator-maven-plugin</artifactId>
-          <version>1.3.5</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.mybatis.generator</groupId>
-              <artifactId>mybatis-generator-core</artifactId>
-              <version>1.3.5</version>
-            </dependency>
 
-            <dependency>
-              <groupId>mysql</groupId>
-              <artifactId>mysql-connector-java</artifactId>
-              <version>8.0.13</version>
-            </dependency>
-
-          </dependencies>
-          <executions>
-            <execution>
-              <id>mybatis.generator</id>
-              <phase>package</phase>
-              <goals>
-                <goal>generate</goal>
-              </goals>
-            </execution>
-          </executions>
-
-          <configuration>
-            <!--允许移动生成的文件-->
-            <verbose>true</verbose>
-            <!--允许自动覆盖文件-->
-            <overwrite>false</overwrite>
-            <configurationFile>
-              src/main/resources/mybatis-generator.xml
-            </configurationFile>
-          </configuration>
-
-        </plugin>
 
       </plugins>
     </pluginManagement>
@@ -191,14 +212,21 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>8</source>
-          <target>8</target>
+          <encoding>utf-8</encoding>
+          <source>1.8</source>
+          <target>1.8</target>
+          <compilerArguments>
+            <verbose />
+            <bootclasspath>${java.home}/lib/rt.jar</bootclasspath>
+          </compilerArguments>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
     </plugins>
+
   </build>
 </project>
